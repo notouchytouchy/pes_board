@@ -178,7 +178,7 @@ To reduce noise, a student averages three consecutive IR sensor readings: 2050 m
 - Q2: **B**
 - Q3: **B**
 - Q4: **C**
-- Q5: **C**
+- Q5: **B**
 - Q6: **A**
 - Q7: **C**
 - Q8: **C**
@@ -460,15 +460,14 @@ Solutions:
    ## Q4 (in class)
    You want smoother, bounded-acceleration motion before running the can-crusher state machine. What should you do?
 
-   - A) Increase PWM frequency to smooth torque ripple
-   - B) Enable the motion planner and reduce the main loop period
-   - C) Enable the motion planner and limit max acceleration
-   - D) Clamp the target rotation range to a smaller interval
+   - A) Enable the motion planner and reduce the main loop period
+   - B) Enable the motion planner and limit max acceleration
+   - C) Clamp the target rotation range to a smaller interval
 
    ## Q5
    In WS3 FORWARD state, which condition should send the system to EMERGENCY?
 
-   - A) `motor_M3.getRotation() > 2.89f`
+   - A) `motor_M3.getRotation() > 1.49f`
    - B) `mechanical_button.read() == 0`
    - C) `us_distance_cm < 4.5f`
    - D) `us_distance_cm > 4.5f`
@@ -476,10 +475,9 @@ Solutions:
    ## Q6 (in class)
    After an EMERGENCY stop and USER-button reset, why do we reset motion-planner internal state (position/velocity) and re-enable it?
 
-   - A) To reflash the motor driver configuration after an emergency stop
-   - B) To avoid stale planner states and ensure predictable next motion cycle
-   - C) To re-zero the encoder count to prevent wraparound
-   - D) To increase the PWM frequency for smoother motion
+   - A) To avoid stale planner states and ensure predictable next motion cycle
+   - B) To re-zero the encoder count to prevent wraparound
+   - C) To increase the PWM frequency for smoother motion
 
    ## Q7
    A 78:1 geared DC motor with encoder has 48 CPR (counts per revolution) at the motor shaft. Including the gear reduction, how many encoder counts occur for one complete rotation of the output shaft (driven load)?
@@ -502,9 +500,9 @@ Solutions:
 - Q1: **B**
 - Q2: **B**
 - Q3: **A, B, E**
-- Q4: **C**
+- Q4: **B**
 - Q5: **C**
-- Q6: **B**
+- Q6: **A**
 - Q7: **C**
 - Q8: **A**
 
@@ -541,3 +539,32 @@ Solutions:
 - **Pins:** motor on M1 pins (PB_PWM_M1, PB_ENC_A_M1, PB_ENC_B_M1, `PB_ENABLE_DCMOTORS`); ultrasonic on PB_D3; mechanical button on PC_5.
 - **In-class plan:** Block 0 build/safety → Block 1 motor bring-up + direction → Block 2 position control + planner → Block 3 state machine + emergency demo.
 - **Help rule:** if stuck >5 minutes, check hints in [ws3.md](ws3.md), then ask instructor.
+
+---
+
+## Post-course Student Feedback Survey
+
+Thank you for completing this post-course feedback survey. Its purpose is to evaluate your experience with the flipped-format workshops (WS1–WS3) and help improve the course for future students. Your responses will be summarized anonymously, so please answer honestly and based on your own experience.
+
+**Likert scale (1-5):**
+1 = Strongly disagree, 2 = Disagree, 3 = Neutral, 4 = Agree, 5 = Strongly agree
+
+### Likert items
+
+1) I participated in all three flipped-format workshops (WS1–WS3).
+2) The pre-class materials were clear and concise.
+3) The time required for pre-class work was reasonable each week.
+4) The pre-class work prepared me to complete the in-class tasks.
+5) In-class time was used effectively for hands-on practice.
+6) Instructor/TA feedback during class was timely and helpful.
+7) The workshop instructions were clear enough to follow independently.
+8) The provided examples/solutions helped me debug and learn.
+9) The pacing across WS1-WS3 was appropriate.
+10) I feel confident to be able to complete similar tasks on my own after this course for our robotics project.
+
+### Open-ended items
+
+11) What was the most valuable part of the flipped format for you?
+12) What was the biggest friction point (prep, tooling, hardware, or in-class)?
+13) If you could change one thing for next year, what would it be?
+14) What should we definitely keep as-is?
