@@ -8,8 +8,7 @@
 #include "StateMachineUtils.h"
 
 
-bool move_servo(int color_to_servo){
-    color_to_servo = 0; // 0 = no input, 3 = red, 4 = yello, 5 = green, 7 = blue
+bool move_servo(int color_to_servo){ // wert color_to_sensor: 0 = no input, 3 = red, 4 = yello, 5 = green, 7 = blue
     StateTimer transition_timer; // initialising timer funktion
     int last_state = 0; // remembers the state active befor the current state
 
