@@ -11,6 +11,7 @@
 bool move_servo(int color_to_servo){
     color_to_servo = 0; // 0 = no input, 3 = red, 4 = yello, 5 = green, 7 = blue
     StateTimer transition_timer; // initialising timer funktion
+    int last_state = 0; // remembers the state active befor the current state
 
     // servo_DO = S-0090, servo_D1 = S-3003
     Servo servo_D0(PB_D0);
@@ -53,6 +54,7 @@ bool move_servo(int color_to_servo){
             if (servo_D0.isEnabled()){
                 servo_D0.disable();
             }
+            last_state = ServoState::INITIAL;
 
             return false;
         }
@@ -65,6 +67,8 @@ bool move_servo(int color_to_servo){
             // values smaller than 0.0f or bigger than 1.0f are constrained to the range (0.0f, 1.0f) in setPulseWidth
             servo_D0.setPulseWidth(servo_input_D0);
             transition_timer.start(3000);
+
+            last_state = ServoState::ROTATE_OUT;
             servo_state = ServoState::SLEEP;
 
             break;
@@ -74,13 +78,23 @@ bool move_servo(int color_to_servo){
             servo_input_D0 = 0.0f;
             // values smaller than 0.0f or bigger than 1.0f are constrained to the range (0.0f, 1.0f) in setPulseWidth
             servo_D0.setPulseWidth(servo_input_D0);
+            transition_timer.start(3000);
+
+            last_state = ServoState::ROTATE_IN;
+            servo_state = ServoState::SLEEP;
 
             break;
         }
         case ServoState::SLEEP: {
             if (transition_timer.isExpired()) {
-                servo_state = ServoState::ROTATE_IN;
+                if (last_state == ServoState::ROTATE_OUT){
+                    servo_state = ServoState::ROTATE_IN;
+                }
+                else if (last_state == ServoState::ROTATE_IN) {
+                    servo_state = ServoState::FINISHED;
+                }
             }
+            last_state = ServoState::SLEEP;
 
             break;
         }
