@@ -6,6 +6,9 @@
 // drivers
 #include "DebounceIn.h"
 
+// subfunktion for servo usage
+#include "move_servo.h"
+
 bool do_execute_main_task = false; // this variable will be toggled via the user button (blue button) and
                                    // decides whether to execute the main task or not
 bool do_reset_all_once = false;    // this variable is used to reset certain variables and objects and
@@ -16,9 +19,25 @@ DebounceIn user_button(BUTTON1);   // create DebounceIn to evaluate the user but
 void toggle_do_execute_main_fcn(); // custom function which is getting executed when user
                                    // button gets pressed, definition at the end
 
+
+int actualColor = 0;     // 0=error, 3=red, 4=yellow, 5=green, 7=blue
+bool armRetracted = 0;   // RoboterArm ist retracted after moving;   
+bool errorPrinted = 0;   // Hilfsflag f�r Errormessage ung�ltige Farbe                      
+
 // main runs as an own thread
 int main()
 {
+
+    // set up states for state machine
+        enum RobotState {
+            INITIAL,
+            EXECUTION,
+            SLEEP,
+            EMERGENCY
+        } robot_state = RobotState::INITIAL;
+
+
+
     // attach button fall function address to user button object
     user_button.fall(&toggle_do_execute_main_fcn);
 
@@ -52,6 +71,28 @@ int main()
 
             // --- code that runs when the blue button was pressed goes here ---
 
+			if (armRetracted == 0 && actualColor!=0) // nur Ausfuehren wenn noch nicht gefahren
+			{
+			
+            armRetracted = move_servo (actualColor); // Ausfuehren des Armbewegungsprogramms
+
+			}
+			
+			if(actualColor == 0){
+				
+				if(errorPrinted == 0)
+				{
+				
+				printf("unbekannte Farbe"); // Fehldermeldung bei ung�ltiger Farbe
+				errorPrinted = 1;
+				}
+				
+			} else {
+				
+				errorPrinted = 0; // sobald wieder eine g�ltige Farbe kommt
+			}
+			
+			
             // visual feedback that the main task is executed, setting this once would actually be enough
             led1 = 1;
         } else {
@@ -60,6 +101,8 @@ int main()
                 do_reset_all_once = false;
 
                 // --- variables and objects that should be reset go here ---
+
+				armRetracted = 0;
 
                 // reset variables and objects
                 led1 = 0;
