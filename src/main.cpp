@@ -6,7 +6,7 @@
 // drivers
 #include "DebounceIn.h"
 
-// subfunktion for servo usage
+// subfunction for servo usage
 #include "move_servo.h"
 
 bool do_execute_main_task = false; // this variable will be toggled via the user button (blue button) and
@@ -21,8 +21,8 @@ void toggle_do_execute_main_fcn(); // custom function which is getting executed 
 
 
 int actualColor = 0;     // 0=error, 3=red, 4=yellow, 5=green, 7=blue
-bool armRetracted = 0;   // RoboterArm ist retracted after moving;   
-bool errorPrinted = 0;   // Hilfsflag f�r Errormessage ung�ltige Farbe                      
+bool armRetracted = 0;   // RoboterArm is retracted after moving;   
+bool errorPrinted = 0;   // Hilfsflag for errormessage invalide color                      
 
 // main runs as an own thread
 int main()
