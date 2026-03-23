@@ -53,8 +53,7 @@ int main()
 
     // additional led
     // create DigitalOut object to command extra led, you need to add an additional resistor, e.g. 220...500 Ohm
-    // a led has an anode (+) and a cathode (-), the cathode needs to be connected to ground via the resistor
-    DigitalOut led1(PB_9);
+
 
     // --- adding variables and objects and applying functions starts here ---
 
@@ -93,8 +92,7 @@ int main()
 			}
 			
 			
-            // visual feedback that the main task is executed, setting this once would actually be enough
-            led1 = 1;
+           
         } else {
             // the following code block gets executed only once
             if (do_reset_all_once) {
@@ -104,8 +102,7 @@ int main()
 
 				armRetracted = 0;
 
-                // reset variables and objects
-                led1 = 0;
+            
             }
         }
 
