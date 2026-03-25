@@ -14,15 +14,17 @@ bool do_execute_main_task = false; // this variable will be toggled via the user
 bool do_reset_all_once = false;    // this variable is used to reset certain variables and objects and
                                    // shows how you can run a code segment only once
 
+
 // objects for user button (blue button) handling on nucleo board
 DebounceIn user_button(BUTTON1);   // create DebounceIn to evaluate the user button
 void toggle_do_execute_main_fcn(); // custom function which is getting executed when user
                                    // button gets pressed, definition at the end
 
 
-int actualColor = 0;     // 0=error, 3=red, 4=yellow, 5=green, 7=blue
-bool armRetracted = 0;   // RoboterArm is retracted after moving;   
-bool errorPrinted = 0;   // Hilfsflag for errormessage invalide color                      
+int actualColor = 3;     // 0=error, 3=red, 4=yellow, 5=green, 7=blue
+bool armRetracted = false;   // RoboterArm is retracted after moving;   
+bool errorPrinted = false;   // Hilfsflag for errormessage invalide color 
+                    
 
 // main runs as an own thread
 int main()
@@ -70,7 +72,10 @@ int main()
 
             // --- code that runs when the blue button was pressed goes here ---
 
-			if (armRetracted == 0 && actualColor!=0) // nur Ausfuehren wenn noch nicht gefahren
+                //printf("%d\n", robot_state);
+               
+
+			if (armRetracted == false && actualColor != false) // nur Ausfuehren wenn noch nicht gefahren
 			{
 			
             armRetracted = move_servo (actualColor); // Ausfuehren des Armbewegungsprogramms
@@ -79,16 +84,16 @@ int main()
 			
 			if(actualColor == 0){
 				
-				if(errorPrinted == 0)
+				if(errorPrinted == false)
 				{
 				
-				printf("unbekannte Farbe"); // Fehldermeldung bei ung�ltiger Farbe
-				errorPrinted = 1;
+				printf("unbekannte Farbe\n"); // Fehldermeldung bei ung�ltiger Farbe
+				errorPrinted = true;
 				}
 				
 			} else {
 				
-				errorPrinted = 0; // sobald wieder eine g�ltige Farbe kommt
+				errorPrinted = false; // sobald wieder eine g�ltige Farbe kommt
 			}
 			
 			
@@ -100,7 +105,7 @@ int main()
 
                 // --- variables and objects that should be reset go here ---
 
-				armRetracted = 0;
+				armRetracted = false;
 
             
             }
