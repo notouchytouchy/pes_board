@@ -55,7 +55,8 @@ int main()
     // line follower, tune max. vel rps to your needs
     LineFollower lineFollower(PB_9, PB_8, config.bar_dist, config.d_wheel, config.b_wheel, motor_M2.getMaxPhysicalVelocity());
     lineFollower.setRotationalVelocityControllerGains(config.Kp, config.Kp_nl);
-
+    //lineFollower.setMaxWheelVelocity(0.5f);
+    
 
     // start timer
     main_task_timer.start();

@@ -5,41 +5,30 @@
 
 // drivers
 #include "DebounceIn.h"
-
+#include "ColorSensor.h"
+#include "DCMotor.h"
+#include "LineFollower.h"
+#include "Linefollower_config.h"
 // subfunction for servo usage
 #include "move_servo.h"
+
+#define USE_GEAR_RATIO_78 false    // set this to true use gear ratio 78.125, otherwise 100.00 is used
+
+
 
 bool do_execute_main_task = false; // this variable will be toggled via the user button (blue button) and
                                    // decides whether to execute the main task or not
 bool do_reset_all_once = false;    // this variable is used to reset certain variables and objects and
                                    // shows how you can run a code segment only once
 
-
 // objects for user button (blue button) handling on nucleo board
 DebounceIn user_button(BUTTON1);   // create DebounceIn to evaluate the user button
 void toggle_do_execute_main_fcn(); // custom function which is getting executed when user
                                    // button gets pressed, definition at the end
 
-
-int actualColor = 3;     // 0=error, 3=red, 4=yellow, 5=green, 7=blue
-bool armRetracted = false;   // RoboterArm is retracted after moving;   
-bool errorPrinted = false;   // Hilfsflag for errormessage invalide color 
-                    
-
 // main runs as an own thread
 int main()
 {
-
-    // set up states for state machine
-        enum RobotState {
-            INITIAL,
-            EXECUTION,
-            SLEEP,
-            EMERGENCY
-        } robot_state = RobotState::INITIAL;
-
-
-
     // attach button fall function address to user button object
     user_button.fall(&toggle_do_execute_main_fcn);
 
@@ -55,12 +44,64 @@ int main()
 
     // additional led
     // create DigitalOut object to command extra led, you need to add an additional resistor, e.g. 220...500 Ohm
-
+    // a led has an anode (+) and a cathode (-), the cathode needs to be connected to ground via the resistor
+    //DigitalOut led1(PB_9);
 
     // --- adding variables and objects and applying functions starts here ---
+        // mechanical button
+    DigitalIn mechanical_button(PC_5); // create DigitalIn object to evaluate mechanical button, you
+                                    // need to specify the mode for proper usage, see below
+    mechanical_button.mode(PullUp);    // sets pullup between pin and 3.3 V, so that there is a defined potential
+
+    // create object to enable power electronics for the dc motors
+    DigitalOut enable_motors(PB_ENABLE_DCMOTORS);
+
+    const float voltage_max = 12.0f; // maximum voltage of battery packs, adjust this to
+                                     // 6.0f V if you only use one battery pack
+    const float gear_ratio = 100.00f; // https://www.pololu.com/product/3490/specs
+    const float kn = 140.0f / 12.0f;
+
+    // motor M1 and M2, do NOT enable motion planner when used with the LineFollower (disabled per default)
+    DCMotor motor_M1(PB_PWM_M1, PB_ENC_A_M1, PB_ENC_B_M1, gear_ratio, kn, voltage_max);
+    DCMotor motor_M2(PB_PWM_M2, PB_ENC_A_M2, PB_ENC_B_M2, gear_ratio, kn, voltage_max);
+
+    LineFollowerConfig config; // uses struct from LineFollowerConfig to configure Linefollower-functions
+    // line follower, tune max. vel rps to your needs
+    LineFollower lineFollower(PB_9, PB_8, config.bar_dist, config.d_wheel, config.b_wheel, motor_M2.getMaxPhysicalVelocity());
+    lineFollower.setRotationalVelocityControllerGains(config.Kp, config.Kp_nl);
+    lineFollower.setMaxWheelVelocity(0.8f);
+    
 
     // start timer
     main_task_timer.start();
+
+    // color sensor
+    float color_raw_Hz[4] = {0.0f, 0.0f, 0.0f, 0.0f}; // define an array to store the measurement of the color sensor (in Hz)
+    float color_avg_Hz[4] = {0.0f, 0.0f, 0.0f, 0.0f}; // define an array to store the average measurement of the color sensor (in Hz)
+    float color_cal[4] = {0.0f, 0.0f, 0.0f, 0.0f}; // define an array to store the calibrated measurement of the color sensor
+    
+    int color_num = 0.0f; // define a variable to store the color number, e.g. 0 for red, 1 for green, 2 for blue, 3 for clear
+    const char* color_string; // define a variable to store the color string, e.g. "red", "green", "blue", "clear"
+    ColorSensor Color_Sensor(PB_3, PB_14, PA_4, PB_0, PC_0, PC_1); // create ColorSensor object, connect the frequency output pin of the sensor to PC_2
+    Color_Sensor.setFrequency(FREQ_20);
+
+    enum ServoState {
+        INITIAL,
+        DrivingStart,
+        DrivingLeft,
+        DrivingUntilColor,
+        Stopping,
+        Repos,
+        MoveArm,
+        FINISHED
+
+    } static servo_state = ServoState::INITIAL;
+
+    int actualColor = 0; // 0=undefined, 3=red, 4=yellow, 5=green, 7=blue
+    int packageReceived = 0;
+    int packageDelieverd = 0;
+
+
 
     // this loop will run forever
     while (true) {
@@ -71,33 +112,152 @@ int main()
         if (do_execute_main_task) {
 
             // --- code that runs when the blue button was pressed goes here ---
+            enable_motors = 1;
+            
+            // visual feedback that the main task is executed, setting this once would actually be enough
 
-                //printf("%d\n", robot_state);
-               
+            
+            // read the raw color measurement (in Hz) and store it in the defined variable
+            for (int i = 0; i < 4; i++) {
+                color_raw_Hz[i] = Color_Sensor.readRawColor()[i]; // read the raw color measurement in Hz
+            }
+            
+            // read the average color measurement (in Hz) and store it in the defined variable
+            for (int i = 0; i < 4; i++) {
+                color_avg_Hz[i] = Color_Sensor.readColor()[i]; // read the average color measurement in Hz
+            }
 
-			if (armRetracted == false && actualColor != false) // nur Ausfuehren wenn noch nicht gefahren
-			{
-			
-            armRetracted = move_servo (actualColor); // Ausfuehren des Armbewegungsprogramms
+            // read the calibrated color measurement (unitless) and store it in the defined variable
+            for (int i = 0; i < 4; i++) {
+                color_cal[i] = Color_Sensor.readColorCalib()[i];
+            }
 
-			}
-			
-			if(actualColor == 0){
-				
-				if(errorPrinted == false)
-				{
-				
-				printf("unbekannte Farbe\n"); // Fehldermeldung bei ung�ltiger Farbe
-				errorPrinted = true;
-				}
-				
-			} else {
-				
-				errorPrinted = false; // sobald wieder eine g�ltige Farbe kommt
-			}
-			
-			
+            // read the classified color number and store it in the defined variable
+            color_num = Color_Sensor.getColor();
+
+            // read the classified color string and store it in the defined variable
+            color_string = Color_Sensor.getColorString(color_num);
+
+            //printf("Color Raw Hz: %f %f %f %f\n", color_raw_Hz[0], color_raw_Hz[1], color_raw_Hz[2], color_raw_Hz[3]); // uncomment to print raw color measurement in Hz
+            //printf("Color Avg Hz: %f %f %f %f\n", color_avg_Hz[0], color_avg_Hz[1], color_avg_Hz[2], color_avg_Hz[3]); // uncomment to print average color measurement in Hz (used for calibration and color classification)
+            printf("Color Num: %d Color %s\n", color_num, color_string); // uncomment to print classified color number and string. careful: filters delay also delays the color classification,
+                                                                         // so the first few readings after switching the color sensor might be wrong until the filters are settled
+            
+
            
+            // state machine
+    switch (servo_state) {
+        case ServoState::INITIAL: {
+
+            if (mechanical_button.read()){
+               servo_state = ServoState::DrivingStart; 
+            }
+
+            break;
+        }
+        case ServoState::DrivingStart: { // move robot out
+            printf("DrivingStart");
+            motor_M1.setVelocity(1*0.78125f); // set a desired speed for speed controlled dc motors M1
+            motor_M2.setVelocity(1);  // set a desired speed for speed controlled dc motors M2
+
+            if(lineFollower.getAvgBit(2)>0.5 && lineFollower.getAvgBit(3)>0.5 && lineFollower.getAvgBit(4)>0.5 && lineFollower.getAvgBit(5)>0.5){
+              servo_state = ServoState::DrivingLeft;  
+            }
+
+            break;
+           
+		 case ServoState::DrivingLeft:{ // waiting until robot is fully extended
+		 	printf("DrivingLeft");
+            motor_M1.setVelocity(0.0f);
+            motor_M2.setVelocity(0.0f);
+            motor_M1.setRotationRelative(1);
+            motor_M2.setRotationRelative(-0.5);
+            printf("%f", motor_M1.getRotation());
+		 		
+            if(motor_M1.getRotation() > 0.9){
+            servo_state = ServoState::DrivingUntilColor; 
+            }
+
+			break;
+		 }  
+		   
+        }
+        case ServoState::DrivingUntilColor: { // move robot back in
+            printf("DrivingUntilColor");
+
+            motor_M1.setVelocity((lineFollower.getRightWheelVelocity())*0.78125f); // set a desired speed for speed controlled dc motors M1
+            motor_M2.setVelocity(lineFollower.getLeftWheelVelocity());  // set a desired speed for speed controlled dc motors M2
+
+           if(color_num!=2){ //color_num==3 || color_num==4 || color_num==5 || color_num==7
+             servo_state = ServoState::Stopping;  
+           }
+
+            break;
+        }
+        case ServoState::Stopping: { // waiting until robot is fully parked
+           printf("Stopping");
+            motor_M1.setVelocity(0.0f);
+            motor_M2.setVelocity(0.0f);
+
+            actualColor = color_num;
+            servo_state = ServoState::Repos;
+
+            break;
+        }
+        case ServoState::Repos: { // waiting until robot is fully parked
+           printf("Repos");
+           servo_state = ServoState::MoveArm;
+            
+            break;
+        }
+        case ServoState::MoveArm: { // waiting until robot is fully parked
+           bool armRetracted = false;
+            printf("MoveArm");
+         armRetracted = move_servo (actualColor); // Ausfuehren des Armbewegungsprogramms  
+            
+            if(armRetracted==true){
+                printf("armRetracted");
+                if(packageReceived<4){
+               packageReceived++;
+               servo_state = ServoState::DrivingUntilColor; 
+                actualColor = 0; // 0=undefined, 3=red, 4=yellow, 5=green, 7=blue
+                }
+
+                else if(packageDelieverd<4 && packageReceived==4){
+                packageDelieverd++;
+                actualColor = 0; // 0=undefined, 3=red, 4=yellow, 5=green, 7=blue
+               servo_state = ServoState::DrivingUntilColor;    
+                }
+
+                else {
+                servo_state = ServoState::FINISHED;  
+                }
+                armRetracted = false;
+            }
+
+            break;
+        }
+
+        case ServoState::FINISHED: {
+           printf("Finished");
+            // Victory-Dance
+
+           break;
+            
+        }
+        default: {
+
+            break; // do nothing
+        }
+    }
+
+
+
+printf("%d", servo_state);
+
+
+
+
         } else {
             // the following code block gets executed only once
             if (do_reset_all_once) {
@@ -105,9 +265,23 @@ int main()
 
                 // --- variables and objects that should be reset go here ---
 
-				armRetracted = false;
 
-            
+                // reset variables and objects
+                actualColor = 0; // 0=undefined, 3=red, 4=yellow, 5=green, 7=blue
+                packageReceived = 0;
+                packageDelieverd = 0;
+
+                servo_state=ServoState::INITIAL;
+
+                //led1 = 0;
+
+                for (int i = 0; i < 4; i++) {
+                    color_raw_Hz[i] = 0.0f;
+                    color_avg_Hz[i] = 0.0f;
+                    color_cal[i] = 0.0f;
+                }
+                color_num = 0;
+                color_string = nullptr;
             }
         }
 
@@ -115,6 +289,10 @@ int main()
         user_led = !user_led;
 
         // --- code that runs every cycle at the end goes here ---
+
+        // print to the serial terminal
+        
+        
 
         // read timer and make the main thread sleep for the remaining time span (non blocking)
         int main_task_elapsed_time_ms = duration_cast<milliseconds>(main_task_timer.elapsed_time()).count();

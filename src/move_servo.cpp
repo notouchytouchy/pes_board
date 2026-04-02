@@ -41,33 +41,33 @@ bool move_servo(int color_to_servo){ // wert color_to_sensor: 0 = no input, 3 = 
 
 
     // set up states for state machine
-    enum ServoState {
+ enum ServoState {
         INITIAL,
         ROTATE_OUT,
+        SLEEP_OUT,
         ROTATE_IN,
-        SLEEP,
+        SLEEP_IN,
         FINISHED
     } static servo_state = ServoState::INITIAL;
-    static ServoState last_state = ServoState::ROTATE_OUT; // remembers the state active befor the current state
 
 
     // state machine
     switch (servo_state) {
         case ServoState::INITIAL: {
-            printf("Initial");
+           
             if (!servo_D0.isEnabled()){
                 servo_D0.enable(1.0f);
             }
             
             
-            if (servo_state == ServoState::INITIAL && (color_to_servo == 3 || color_to_servo == 4 || color_to_servo == 5 || color_to_servo == 7)){
+            if (servo_state == ServoState::INITIAL){ // && (color_to_servo == 3 || color_to_servo == 4 || color_to_servo == 5 || color_to_servo == 7)
                 servo_state = ServoState::ROTATE_OUT;
             }
 
             return false;
         }
-        case ServoState::ROTATE_OUT: {
-            printf("Rotate OUT\n");
+        case ServoState::ROTATE_OUT: { // move robot out
+            
             
             // function to map the distance to the servo movement -> (0.0f, 1.0f)
             servo_input_D0 = 0.3f;
@@ -75,46 +75,45 @@ bool move_servo(int color_to_servo){ // wert color_to_sensor: 0 = no input, 3 = 
             servo_D0.setPulseWidth(servo_input_D0);
             transition_timer.start(3000);
 
-            last_state = ServoState::ROTATE_OUT;
-            servo_state = ServoState::SLEEP;
+            servo_state = ServoState::SLEEP_OUT;
 
             break;
+           
+		 case ServoState::SLEEP_OUT:{ // waiting until robot is fully extended
+		 	
+		 	
+		 	if (transition_timer.isExpired()) {
+		 		servo_state = ServoState::ROTATE_IN;
+		 		
+		 	}
+		 	
+			break;
+		 }  
+		   
         }
-        case ServoState::ROTATE_IN: {
-            printf("Rotate IN\n");
+        case ServoState::ROTATE_IN: { // move robot back in
+           
             // function to map the distance to the servo movement -> (0.0f, 1.0f)
             servo_input_D0 = 1.0f;
             // values smaller than 0.0f or bigger than 1.0f are constrained to the range (0.0f, 1.0f) in setPulseWidth
             servo_D0.setPulseWidth(servo_input_D0);
             transition_timer.start(3000);
 
-            last_state = ServoState::ROTATE_IN;
-            servo_state = ServoState::SLEEP;
+            servo_state = ServoState::SLEEP_IN;
 
             break;
         }
-        case ServoState::SLEEP: {
-            printf("Sleep\n");
-            if (transition_timer.isExpired()) {
-                printf("timer abgelaufen\n");
-                if (last_state == ServoState::ROTATE_OUT){
-                    servo_state = ServoState::ROTATE_IN;
-                  printf("sleep1");
-                }
-                else if (last_state == ServoState::ROTATE_IN) {
-                    servo_state = ServoState::FINISHED;
-                    printf("sleep2");
-                  
-                }
-
-                
-            }
+        case ServoState::SLEEP_IN: { // waiting until robot is fully parked
             
-            printf("%d", last_state);
+            if (transition_timer.isExpired()) {
+                
+                servo_state = ServoState::FINISHED;
+                }
+            
             break;
         }
         case ServoState::FINISHED: {
-            printf("Finished");
+            
             servo_state = ServoState::INITIAL;
 
             return true; // signal to main, that the task is done

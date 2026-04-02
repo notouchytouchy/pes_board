@@ -33,6 +33,10 @@ int main()
     // led on nucleo board
     DigitalOut user_led(LED1);
 
+    // additional led
+    // create DigitalOut object to command extra led, you need to add an additional resistor, e.g. 220...500 Ohm
+    // a led has an anode (+) and a cathode (-), the cathode needs to be connected to ground via the resistor
+    //DigitalOut led1(PB_9);
 
     // --- adding variables and objects and applying functions starts here ---
 
@@ -43,8 +47,8 @@ int main()
     
     int color_num = 0.0f; // define a variable to store the color number, e.g. 0 for red, 1 for green, 2 for blue, 3 for clear
     const char* color_string; // define a variable to store the color string, e.g. "red", "green", "blue", "clear"
-    ColorSensor Color_Sensor(PB_3); // create ColorSensor object, connect the frequency output pin of the sensor to PC_2
-
+    ColorSensor Color_Sensor(PB_3, PB_14, PA_4, PB_0, PC_0, PC_1); // create ColorSensor object, connect the frequency output pin of the sensor to PC_2
+    
     // start timer
     main_task_timer.start();
 
@@ -57,6 +61,9 @@ int main()
         if (do_execute_main_task) {
 
             // --- code that runs when the blue button was pressed goes here ---
+
+            // visual feedback that the main task is executed, setting this once would actually be enough
+
 
             // read the raw color measurement (in Hz) and store it in the defined variable
             for (int i = 0; i < 4; i++) {
@@ -79,8 +86,8 @@ int main()
             // read the classified color string and store it in the defined variable
             color_string = Color_Sensor.getColorString(color_num);
 
-            // printf("Color Raw Hz: %f %f %f %f\n", color_raw_Hz[0], color_raw_Hz[1], color_raw_Hz[2], color_raw_Hz[3]); // uncomment to print raw color measurement in Hz
-            // printf("Color Avg Hz: %f %f %f %f\n", color_avg_Hz[0], color_avg_Hz[1], color_avg_Hz[2], color_avg_Hz[3]); // uncomment to print average color measurement in Hz (used for calibration and color classification)
+            printf("Color Raw Hz: %f %f %f %f\n", color_raw_Hz[0], color_raw_Hz[1], color_raw_Hz[2], color_raw_Hz[3]); // uncomment to print raw color measurement in Hz
+            printf("Color Avg Hz: %f %f %f %f\n", color_avg_Hz[0], color_avg_Hz[1], color_avg_Hz[2], color_avg_Hz[3]); // uncomment to print average color measurement in Hz (used for calibration and color classification)
             printf("Color Num: %d Color %s\n", color_num, color_string); // uncomment to print classified color number and string. careful: filters delay also delays the color classification,
                                                                          // so the first few readings after switching the color sensor might be wrong until the filters are settled
 
@@ -92,6 +99,7 @@ int main()
                 // --- variables and objects that should be reset go here ---
 
                 // reset variables and objects
+                //led1 = 0;
 
                 for (int i = 0; i < 4; i++) {
                     color_raw_Hz[i] = 0.0f;
