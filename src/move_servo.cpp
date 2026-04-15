@@ -9,9 +9,10 @@
 #include "StateMachineUtils.h"
 
 
-bool move_servo(int color_to_servo){ // wert color_to_sensor: 0 = no input, 3 = red, 4 = yello, 5 = green, 7 = blue
+bool move_servo(int color_to_servo, int packageReceived){ // wert color_to_sensor: 0 = no input, 3 = red, 4 = yello, 5 = green, 7 = blue
     static StateTimer transition_timer; // initialising timer funktion
     static bool initialized=false;
+    static bool initializedReceiving=false;
 
 
     // servo_DO = S-0090, servo_D1 = S-3003
@@ -35,7 +36,7 @@ bool move_servo(int color_to_servo){ // wert color_to_sensor: 0 = no input, 3 = 
     static float servo_D3_ang_max = 0.1300f;
     // servo.setPulseWidth: before calibration (0,1) -> (min pwm, max pwm)
 
-    if(initialized == false){
+    if(initialized == false && packageReceived<4){
         // servo.setPulseWidth: after calibration (0,1) -> (servo_D0_ang_min, servo_D0_ang_max)
         servo_D0.calibratePulseMinMax(servo_D0_ang_min, servo_D0_ang_max);
         servo_D1.calibratePulseMinMax(servo_D1_ang_min, servo_D1_ang_max);
@@ -57,6 +58,30 @@ bool move_servo(int color_to_servo){ // wert color_to_sensor: 0 = no input, 3 = 
             servo_D3.disable();
 
         initialized = true;
+    }
+
+    if(initializedReceiving == false && packageReceived==4){
+        // servo.setPulseWidth: after calibration (0,1) -> (servo_D0_ang_min, servo_D0_ang_max)
+        servo_D0.calibratePulseMinMax(servo_D0_ang_min, servo_D0_ang_max);
+        servo_D1.calibratePulseMinMax(servo_D1_ang_min, servo_D1_ang_max);
+        servo_D2.calibratePulseMinMax(servo_D2_ang_min, servo_D2_ang_max);
+        servo_D3.calibratePulseMinMax(servo_D3_ang_min, servo_D3_ang_max);
+        // default acceleration of the servo motion profile is 1.0e6f
+        servo_D0.setMaxAcceleration(0.5f);
+        servo_D1.setMaxAcceleration(0.5f);
+        servo_D2.setMaxAcceleration(0.5f);
+        servo_D3.setMaxAcceleration(0.5f);
+        // check to make sure servo outputs are disabled bevor start
+        if(servo_D0.isEnabled())
+            servo_D0.disable();
+        if(servo_D1.isEnabled())
+            servo_D1.disable();
+        if(servo_D2.isEnabled())
+            servo_D2.disable();
+        if(servo_D3.isEnabled())
+            servo_D3.disable();
+
+        initializedReceiving = true;
     }
     static float servo_input_D0 = 1.0f;
     static float servo_input_D1 = 1.0f;
@@ -89,27 +114,27 @@ bool move_servo(int color_to_servo){ // wert color_to_sensor: 0 = no input, 3 = 
             printf("color for rotate out");
             if(color_to_servo == 4){ //yello servo
                 servo_D0.enable(1.0f);
-                servo_input_D0 = 0.3f;
+                servo_input_D0 = 0.43f;
                 servo_D0.setPulseWidth(servo_input_D0);
             }
             else if(color_to_servo == 3){ //red servo
                 servo_D1.enable(1.0f);
-                servo_input_D1 = 0.3f;
+                servo_input_D1 = 0.43f;
                 servo_D1.setPulseWidth(servo_input_D1);
             }
             else if(color_to_servo == 7){ //blue servo
                 servo_D2.enable(1.0f);
-                servo_input_D2 = 0.3f;
+                servo_input_D2 = 0.43;
                 servo_D2.setPulseWidth(servo_input_D2);
             }
             else if(color_to_servo == 5){ //green servo
                 servo_D3.enable(1.0f);
-                servo_input_D3 = 0.3f;
+                servo_input_D3 = 0.43f;
                 servo_D3.setPulseWidth(servo_input_D3);
             }
             else printf("No usable colortype detected");
 
-            transition_timer.start(3000);
+            transition_timer.start(2500);
             servo_state = ServoState::SLEEP_OUT;
 
             break;
@@ -142,7 +167,7 @@ bool move_servo(int color_to_servo){ // wert color_to_sensor: 0 = no input, 3 = 
             }
             else printf("No usable colortype detected");
 
-            transition_timer.start(3000);
+            transition_timer.start(2500);
             servo_state = ServoState::SLEEP_IN;
 
             break;
@@ -170,6 +195,7 @@ bool move_servo(int color_to_servo){ // wert color_to_sensor: 0 = no input, 3 = 
             printf("servo Finished");
             
             initialized = false;
+            initializedReceiving = false;
             servo_state = ServoState::INITIAL;
             return true; // signal to main, that the task is done
 

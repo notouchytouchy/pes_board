@@ -69,7 +69,7 @@ int main()
     // line follower, tune max. vel rps to your needs
     LineFollower lineFollower(PB_9, PB_8, config.bar_dist, config.d_wheel, config.b_wheel, motor_M2.getMaxPhysicalVelocity());
     lineFollower.setRotationalVelocityControllerGains(config.Kp, config.Kp_nl);
-    lineFollower.setMaxWheelVelocity(0.6f);
+    lineFollower.setMaxWheelVelocity(3.0f);
     
 
     // start timer
@@ -158,71 +158,83 @@ int main()
                     break;
                 }
                 case ServoState::DrivingStart: { // move robot out
-                    printf("DrivingStart");
+                    //printf("DrivingStart");
 
                     motor_M1.setVelocity(1*0.78125f); // set a desired speed for speed controlled dc motors M1
                     motor_M2.setVelocity(1);  // set a desired speed for speed controlled dc motors M2
 
                     if(lineFollower.getAvgBit(2)>0.5 && lineFollower.getAvgBit(3)>0.5 && lineFollower.getAvgBit(4)>0.5 && lineFollower.getAvgBit(5)>0.5){
+                        motor_M1.setVelocity(0); 
+                        motor_M2.setVelocity(0);
+                        lastPositionM1 = motor_M1.getRotation();
+                        lastPositionM2 = motor_M2.getRotation();
+
                         servo_state = ServoState::DrivingLeft;  
                     }
 
                     break;
                 }
                 case ServoState::DrivingLeft:{ // waiting until robot is fully extended
-                    printf("DrivingLeft");
+                    //printf("DrivingLeft");
 
-                    motor_M1.setVelocity(0.0f);
-                    motor_M2.setVelocity(0.0f);
-                    motor_M1.setRotationRelative(1);
-                    motor_M2.setRotationRelative(-0.5);
                         
-                    if(motor_M1.getRotation() > 0.9){
-                        servo_state = ServoState::DrivingUntilColor; 
-                    }
+                        motor_M1.setVelocity((2.0)*0.78125f); 
+                        motor_M2.setVelocity(0.7);
+
+                        if(motor_M1.getRotation() > (lastPositionM1 + 1.5)){
+                            lastPositionM1 = 0;
+                            lastPositionM2 = 0;
+                            motor_M1.setVelocity(0); 
+                            motor_M2.setVelocity(0);
+                            servo_state = ServoState::DrivingUntilColor; 
+                        }
 
                     break; 
                 }
                 case ServoState::DrivingUntilColor: { // move robot back in
-                    printf("DrivingUntilColor");
+                    //printf("DrivingUntilColor");
 
                     motor_M1.setVelocity((lineFollower.getRightWheelVelocity())*0.78125f); // set a desired speed for speed controlled dc motors M1
                     motor_M2.setVelocity(lineFollower.getLeftWheelVelocity());  // set a desired speed for speed controlled dc motors M2
 
-                    if((lastColor != color_num) && (color_num==3 || color_num==4 || color_num==5 || color_num==7)){
-                        actualColor = color_num;
+                    if((lineFollower.getAvgBit(2)>0.5 && lineFollower.getAvgBit(3)>0.5 && lineFollower.getAvgBit(4)>0.5 || lineFollower.getAvgBit(3)>0.5 && lineFollower.getAvgBit(4)>0.5 && lineFollower.getAvgBit(5)>0.5) && (motor_M2.getRotation() > (lastPositionM2 + 2.0))){  //(lastColor != color_num) && (color_num==3 || color_num==4 || color_num==5 || color_num==7)
+                        
                         servo_state = ServoState::Stopping;  
                     }
 
                     break;
                 }
                 case ServoState::Stopping: { // waiting until robot is fully parked
-                    printf("Stopping");
+                    //printf("Stopping");
+
+                    actualColor = color_num;
 
                     motor_M1.setVelocity(0.0f);
                     motor_M2.setVelocity(0.0f);
                     lastPositionM1 = 0;
                     lastPositionM2 = 0;
 
-                    servo_state = ServoState::Repos;
+                    if(actualColor == 3 || actualColor == 4 || actualColor == 5 || actualColor == 7){
+                        servo_state = ServoState::Repos;
+                    }
 
                     break;
                 }
                 case ServoState::Repos: { // waiting until robot is fully parked
-                    printf("Repos");
-                    printf("now:%f  target:%f\n", motor_M2.getRotation(), lastPositionM2);
-                    if (lastPositionM1 == 0){
+                   // printf("Repos");
+                    //printf("now:%f  target:%f\n", motor_M2.getRotation(), lastPositionM2);
+                    if (lastPositionM2 == 0){
                         lastPositionM1 = motor_M1.getRotation();
                         lastPositionM2 = motor_M2.getRotation();
+
                         motor_M1.setVelocity((-0.5)*0.78125f); 
                         motor_M2.setVelocity(-0.5);
+                        
                     }
 
                     if(actualColor == 3){ // color red
 
-                        if(motor_M2.getRotation() < (lastPositionM2 - 0.5)){
-                            lastPositionM1 = 0;
-                            lastPositionM2 = 0;
+                        if(motor_M2.getRotation() < (lastPositionM2 - 0.01)){
                             motor_M1.setVelocity(0); 
                             motor_M2.setVelocity(0);
                             servo_state = ServoState::MoveArm; 
@@ -230,9 +242,7 @@ int main()
                     }
                     else if(actualColor == 4){ // color yellow
                         
-                        if(motor_M2.getRotation() < (lastPositionM2 - 0.5)){
-                            lastPositionM1 = 0;
-                            lastPositionM2 = 0;
+                        if(motor_M2.getRotation() < (lastPositionM2 - 0.49)){
                             motor_M1.setVelocity(0); 
                             motor_M2.setVelocity(0);
                             servo_state = ServoState::MoveArm; 
@@ -240,9 +250,7 @@ int main()
                     }
                     else if(actualColor == 5){ // color green
 
-                        if(motor_M2.getRotation() < (lastPositionM2 - 0.5)){
-                            lastPositionM1 = 0;
-                            lastPositionM2 = 0;
+                        if(motor_M2.getRotation() < (lastPositionM2 - 0.29)){
                             motor_M1.setVelocity(0); 
                             motor_M2.setVelocity(0);
                             servo_state = ServoState::MoveArm; 
@@ -251,8 +259,6 @@ int main()
                     else if(actualColor == 7){ // color blue
 
                         if(motor_M2.getRotation() < (lastPositionM2 - 0.5)){
-                            lastPositionM1 = 0;
-                            lastPositionM2 = 0;
                             motor_M1.setVelocity(0); 
                             motor_M2.setVelocity(0);
                             servo_state = ServoState::MoveArm; 
@@ -262,11 +268,11 @@ int main()
                     break;
                 }
                 case ServoState::MoveArm: { // waiting until robot is fully parked
-                    printf("MoveArm\n");
+                    //printf("MoveArm\n");
 
                     motor_M1.setVelocity(0.0f);
                     motor_M2.setVelocity(0.0f);
-                    armRetracted = move_servo (actualColor); // Ausfuehren des Armbewegungsprogramms  
+                    armRetracted = move_servo (actualColor, packageReceived); // Ausfuehren des Armbewegungsprogramms  
 
                     if(armRetracted==true){
                         if(packageReceived<4){
@@ -291,8 +297,18 @@ int main()
                     break;
                 }
                 case ServoState::FINISHED: {
-                printf("Finished");
+                //printf("Finished");
                     // Victory-Dance
+
+                armRetracted = false;
+                actualColor = 0; // 0=undefined, 3=red, 4=yellow, 5=green, 7=blue
+                lastColor = 0; // last value of actualColor != 0
+                packageReceived = 0;
+                packageDelieverd = 0;
+                lastPositionM1 = 0;
+                lastPositionM2 = 0;
+
+                servo_state = ServoState::INITIAL;
 
                 break;
                     
@@ -305,7 +321,7 @@ int main()
 
 
 
-            printf("%d", servo_state);
+            //printf("%d", servo_state);
 
 
 
