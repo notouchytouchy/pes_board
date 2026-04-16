@@ -85,25 +85,24 @@ int main()
     ColorSensor Color_Sensor(PB_3, PB_14, PA_4, PB_0, PA_0, PA_1); // create ColorSensor object, connect the frequency output pin of the sensor to PC_2
     Color_Sensor.setFrequency(FREQ_002);
 
-    enum ServoState {
+    enum RobotState {
         INITIAL,
         DrivingStart,
         DrivingLeft,
-        DrivingUntilColor,
+        DrivingUntilCrossLine,
         Stopping,
         Repos,
         MoveArm,
         FINISHED
 
-    } static servo_state = ServoState::INITIAL;
+    } static robot_state = RobotState::INITIAL;
 
-    bool armRetracted = false;
+    bool armRetracted = false; // return value of function move_servo
     int actualColor = 0; // 0=undefined, 3=red, 4=yellow, 5=green, 7=blue
-    int lastColor = 0; // last value of actualColor != 0
-    int packageReceived = 0;
-    int packageDelieverd = 0;
-    float lastPositionM1 = 0;
-    float lastPositionM2 = 0;
+    int packageReceived = 0; // counts how many packages were collected
+    int packageDelieverd = 0;  // counts how many packages were delieverd
+    float lastPositionM1 = 0;  // sets the last position of the M1, when cross line detected
+    float lastPositionM2 = 0;  // // sets the last position of the M2, when cross line detected
 
 
     // this loop will run forever
@@ -148,82 +147,75 @@ int main()
 
            
             // state machine
-            switch (servo_state){
-                case ServoState::INITIAL: {
+            switch (robot_state){
+                case RobotState::INITIAL: {
 
-                    if (mechanical_button.read()){
-                    servo_state = ServoState::DrivingStart; 
+                    if (mechanical_button.read()){  // startbutton pressed. beginning of the cycle
+                    robot_state = RobotState::DrivingStart; 
                     }
 
                     break;
                 }
-                case ServoState::DrivingStart: { // move robot out
-                    //printf("DrivingStart");
-
-                    motor_M1.setVelocity(1*0.78125f); // set a desired speed for speed controlled dc motors M1
+                case RobotState::DrivingStart: { // drive forward until cross line
+                   
+                    motor_M1.setVelocity(1*0.78125f); // set a desired speed for speed controlled dc motors M1, factor 078 because there are different gears in the two motors
                     motor_M2.setVelocity(1);  // set a desired speed for speed controlled dc motors M2
 
-                    if(lineFollower.getAvgBit(2)>0.5 && lineFollower.getAvgBit(3)>0.5 && lineFollower.getAvgBit(4)>0.5 && lineFollower.getAvgBit(5)>0.5){
-                        motor_M1.setVelocity(0); 
+                    if(lineFollower.getAvgBit(2)>0.5 && lineFollower.getAvgBit(3)>0.5 && lineFollower.getAvgBit(4)>0.5 && lineFollower.getAvgBit(5)>0.5){ // if cross line is detected
+                        motor_M1.setVelocity(0);  
                         motor_M2.setVelocity(0);
                         lastPositionM1 = motor_M1.getRotation();
                         lastPositionM2 = motor_M2.getRotation();
 
-                        servo_state = ServoState::DrivingLeft;  
+                        robot_state = RobotState::DrivingLeft;  
                     }
 
                     break;
                 }
-                case ServoState::DrivingLeft:{ // waiting until robot is fully extended
-                    //printf("DrivingLeft");
-
+                case RobotState::DrivingLeft:{ // driving a left curve
                         
                         motor_M1.setVelocity((2.0)*0.78125f); 
                         motor_M2.setVelocity(0.7);
 
-                        if(motor_M1.getRotation() > (lastPositionM1 + 1.5)){
+                        if(motor_M1.getRotation() > (lastPositionM1 + 1.5)){ // if left curve rotation is reached
                             lastPositionM1 = 0;
                             lastPositionM2 = 0;
                             motor_M1.setVelocity(0); 
                             motor_M2.setVelocity(0);
-                            servo_state = ServoState::DrivingUntilColor; 
+                            robot_state = RobotState::DrivingUntilCrossLine; 
                         }
 
                     break; 
                 }
-                case ServoState::DrivingUntilColor: { // move robot back in
-                    //printf("DrivingUntilColor");
+                case RobotState::DrivingUntilCrossLine: { // driving until a cross line is detected
 
                     motor_M1.setVelocity((lineFollower.getRightWheelVelocity())*0.78125f); // set a desired speed for speed controlled dc motors M1
                     motor_M2.setVelocity(lineFollower.getLeftWheelVelocity());  // set a desired speed for speed controlled dc motors M2
 
-                    if((lineFollower.getAvgBit(2)>0.5 && lineFollower.getAvgBit(3)>0.5 && lineFollower.getAvgBit(4)>0.5 || lineFollower.getAvgBit(3)>0.5 && lineFollower.getAvgBit(4)>0.5 && lineFollower.getAvgBit(5)>0.5) && (motor_M2.getRotation() > (lastPositionM2 + 2.0))){  //(lastColor != color_num) && (color_num==3 || color_num==4 || color_num==5 || color_num==7)
-                        
-                        servo_state = ServoState::Stopping;  
+                    if((lineFollower.getAvgBit(2)>0.5 && lineFollower.getAvgBit(3)>0.5 && lineFollower.getAvgBit(4)>0.5 || lineFollower.getAvgBit(3)>0.5 && lineFollower.getAvgBit(4)>0.5 && lineFollower.getAvgBit(5)>0.5) && (motor_M2.getRotation() > (lastPositionM2 + 2.0))){  // if 3 LED's detect black, we are at a cross line
+                        robot_state = RobotState::Stopping;  
                     }
 
                     break;
                 }
-                case ServoState::Stopping: { // waiting until robot is fully parked
-                    //printf("Stopping");
+                case RobotState::Stopping: { // waiting until robot is fully parked
 
-                    actualColor = color_num;
+                    actualColor = color_num; // saving color internally
 
                     motor_M1.setVelocity(0.0f);
                     motor_M2.setVelocity(0.0f);
                     lastPositionM1 = 0;
                     lastPositionM2 = 0;
 
-                    if(actualColor == 3 || actualColor == 4 || actualColor == 5 || actualColor == 7){
-                        servo_state = ServoState::Repos;
+                    if(actualColor == 3 || actualColor == 4 || actualColor == 5 || actualColor == 7){  // if valid color is detected and saved
+                        robot_state = RobotState::Repos;
                     }
 
                     break;
                 }
-                case ServoState::Repos: { // waiting until robot is fully parked
-                   // printf("Repos");
-                    //printf("now:%f  target:%f\n", motor_M2.getRotation(), lastPositionM2);
-                    if (lastPositionM2 == 0){
+                case RobotState::Repos: { // repositioning the robot according to the detected color
+
+                    if (lastPositionM2 == 0){ // if lastPosition was set to zero, we move the robot backwards
                         lastPositionM1 = motor_M1.getRotation();
                         lastPositionM2 = motor_M2.getRotation();
 
@@ -232,83 +224,78 @@ int main()
                         
                     }
 
-                    if(actualColor == 3){ // color red
+                    if(actualColor == 3){ // repositioning color red
 
                         if(motor_M2.getRotation() < (lastPositionM2 - 0.01)){
                             motor_M1.setVelocity(0); 
                             motor_M2.setVelocity(0);
-                            servo_state = ServoState::MoveArm; 
+                            robot_state = RobotState::MoveArm; 
                         }
                     }
-                    else if(actualColor == 4){ // color yellow
+                    else if(actualColor == 4){ // repositioning color yellow
                         
                         if(motor_M2.getRotation() < (lastPositionM2 - 0.49)){
                             motor_M1.setVelocity(0); 
                             motor_M2.setVelocity(0);
-                            servo_state = ServoState::MoveArm; 
+                            robot_state = RobotState::MoveArm; 
                         }
                     }
-                    else if(actualColor == 5){ // color green
+                    else if(actualColor == 5){ // repositioning color green
 
                         if(motor_M2.getRotation() < (lastPositionM2 - 0.29)){
                             motor_M1.setVelocity(0); 
                             motor_M2.setVelocity(0);
-                            servo_state = ServoState::MoveArm; 
+                            robot_state = RobotState::MoveArm; 
                         }
                     }
-                    else if(actualColor == 7){ // color blue
+                    else if(actualColor == 7){ // repositioning color blue
 
                         if(motor_M2.getRotation() < (lastPositionM2 - 0.5)){
                             motor_M1.setVelocity(0); 
                             motor_M2.setVelocity(0);
-                            servo_state = ServoState::MoveArm; 
+                            robot_state = RobotState::MoveArm; 
                         }
                     }
                     
                     break;
                 }
-                case ServoState::MoveArm: { // waiting until robot is fully parked
-                    //printf("MoveArm\n");
+                case RobotState::MoveArm: { // move the servo arm
 
                     motor_M1.setVelocity(0.0f);
                     motor_M2.setVelocity(0.0f);
                     armRetracted = move_servo (actualColor, packageReceived); // Ausfuehren des Armbewegungsprogramms  
 
                     if(armRetracted==true){
-                        if(packageReceived<4){
+                        if(packageReceived<4){ // if we receive a package, we count them and are going back to DrivingUntilCrossLine for the next one
                             packageReceived++;
-                            lastColor = actualColor;
                             actualColor = 0; // 0=undefined, 3=red, 4=yellow, 5=green, 7=blue
-                            servo_state = ServoState::DrivingUntilColor;
+                            robot_state = RobotState::DrivingUntilCrossLine;
                         }
-                        else if(packageDelieverd<4 && packageReceived==4){
+                        else if(packageDelieverd<4 && packageReceived==4){  // if we deliver a package, we count them and are going back to DrivingUntilCrossLine for the next one
                             packageDelieverd++;
-                            lastColor = actualColor;
                             actualColor = 0; // 0=undefined, 3=red, 4=yellow, 5=green, 7=blue
-                            servo_state = ServoState::DrivingUntilColor;    
+                            robot_state = RobotState::DrivingUntilCrossLine;    
                         }
 
-                        if(packageDelieverd==4 && packageReceived==4) {
-                            servo_state = ServoState::FINISHED;  
+                        if(packageDelieverd==4 && packageReceived==4) {  // if we received 4 and delievered 4 packages, we are finished and are going to the finished state
+                            robot_state = RobotState::FINISHED;  
                         }
                         armRetracted = false;
                     }
 
                     break;
                 }
-                case ServoState::FINISHED: {
-                //printf("Finished");
+                case RobotState::FINISHED: {  // victory dance and prepare everything for another cycle
                     // Victory-Dance
 
                 armRetracted = false;
                 actualColor = 0; // 0=undefined, 3=red, 4=yellow, 5=green, 7=blue
-                lastColor = 0; // last value of actualColor != 0
                 packageReceived = 0;
                 packageDelieverd = 0;
                 lastPositionM1 = 0;
                 lastPositionM2 = 0;
 
-                servo_state = ServoState::INITIAL;
+                robot_state = RobotState::INITIAL;
 
                 break;
                     
@@ -318,13 +305,6 @@ int main()
                     break; // do nothing
                 }
             }
-
-
-
-            //printf("%d", servo_state);
-
-
-
 
         } else {
             // the following code block gets executed only once
@@ -336,13 +316,10 @@ int main()
 
                 // reset variables and objects
                 actualColor = 0; // 0=undefined, 3=red, 4=yellow, 5=green, 7=blue
-                lastColor = 0;
                 packageReceived = 0;
                 packageDelieverd = 0;
 
-                servo_state=ServoState::INITIAL;
-
-                //led1 = 0;
+                robot_state = RobotState::INITIAL;
 
                 for (int i = 0; i < 4; i++) {
                     color_raw_Hz[i] = 0.0f;
