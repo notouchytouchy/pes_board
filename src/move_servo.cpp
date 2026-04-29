@@ -112,22 +112,22 @@ bool move_servo(int color_to_servo, int packageReceived){ // wert color_to_senso
            
             if(color_to_servo == 4){ //yellow servo
                 servo_D0.enable(0.0f);
-                servo_input_D0 = 0.5f;
+                servo_input_D0 = 0.41f;
                 servo_D0.setPulseWidth(servo_input_D0);
             }
             else if(color_to_servo == 3){ //red servo
-                servo_D1.enable(0.98f);
-                servo_input_D1 = 0.5f;
+                servo_D1.enable(0.97f);
+                servo_input_D1 = 0.47f;
                 servo_D1.setPulseWidth(servo_input_D1);
             }
             else if(color_to_servo == 7){ //blue servo
                 servo_D2.enable(0.0f);
-                servo_input_D2 = 0.5f;
+                servo_input_D2 = 0.41f;
                 servo_D2.setPulseWidth(servo_input_D2);
             }
             else if(color_to_servo == 5){ //green servo
                 servo_D3.enable(1.0f);
-                servo_input_D3 = 0.5f;
+                servo_input_D3 = 0.47f;
                 servo_D3.setPulseWidth(servo_input_D3);
             }
             else printf("No usable colortype detected");
@@ -148,15 +148,15 @@ bool move_servo(int color_to_servo, int packageReceived){ // wert color_to_senso
         case ServoState::ROTATE_IN: { // move robot back in
             
             if(color_to_servo == 4){ //yello servo
-                servo_input_D0 = 0.02f;
+                servo_input_D0 = 0.00f;
                 servo_D0.setPulseWidth(servo_input_D0);
             }
             else if(color_to_servo == 3){ //red servo
-                servo_input_D1 = 0.98f;
+                servo_input_D1 = 0.97f;
                 servo_D1.setPulseWidth(servo_input_D1);
             }
             else if(color_to_servo == 7){ //blue servo
-                servo_input_D2 = 0.02f;
+                servo_input_D2 = 0.00f;
                 servo_D2.setPulseWidth(servo_input_D2);
             }
             else if(color_to_servo == 5){ //green servo

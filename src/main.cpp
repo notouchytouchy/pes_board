@@ -12,9 +12,6 @@
 // subfunction for servo usage
 #include "move_servo.h"
 
-#define USE_GEAR_RATIO_78 false    // set this to true use gear ratio 78.125, otherwise 100.00 is used
-
-
 
 bool do_execute_main_task = false; // this variable will be toggled via the user button (blue button) and
                                    // decides whether to execute the main task or not
@@ -200,20 +197,21 @@ int main()
                 }
                 case RobotState::Stopping: { // waiting until robot is fully parked
 
-                    actualColor = color_num; // saving color internally
-
                     motor_M1.setVelocity(0.0f);
                     motor_M2.setVelocity(0.0f);
                     lastPositionM1 = 0;
                     lastPositionM2 = 0;
 
-                    if(actualColor == 3 || actualColor == 4 || actualColor == 5 || actualColor == 7){  // if valid color is detected and saved
-                        robot_state = RobotState::Repos;
-                    }
+                    robot_state = RobotState::Repos;
+                    
 
                     break;
                 }
                 case RobotState::Repos: { // repositioning the robot according to the detected color
+
+                    if(color_num == 3 || color_num == 4 || color_num == 5 || color_num == 7){  // if valid color is detected, color is safed
+                        actualColor = color_num; // saving color internally
+                    }
 
                     if (lastPositionM2 == 0){ // if lastPosition was set to zero, we move the robot backwards
                         lastPositionM1 = motor_M1.getRotation();
@@ -226,7 +224,7 @@ int main()
 
                     if(actualColor == 3){ // repositioning color red
 
-                        if(motor_M2.getRotation() < (lastPositionM2 - 0.01)){
+                        if(motor_M2.getRotation() < (lastPositionM2 - 0.02)){
                             motor_M1.setVelocity(0); 
                             motor_M2.setVelocity(0);
                             robot_state = RobotState::MoveArm; 
@@ -242,7 +240,7 @@ int main()
                     }
                     else if(actualColor == 5){ // repositioning color green
 
-                        if(motor_M2.getRotation() < (lastPositionM2 - 0.29)){
+                        if(motor_M2.getRotation() < (lastPositionM2 - 0.45)){
                             motor_M1.setVelocity(0); 
                             motor_M2.setVelocity(0);
                             robot_state = RobotState::MoveArm; 
@@ -250,7 +248,7 @@ int main()
                     }
                     else if(actualColor == 7){ // repositioning color blue
 
-                        if(motor_M2.getRotation() < (lastPositionM2 - 0.5)){
+                        if(motor_M2.getRotation() < (lastPositionM2 - 0.77)){
                             motor_M1.setVelocity(0); 
                             motor_M2.setVelocity(0);
                             robot_state = RobotState::MoveArm; 
@@ -313,6 +311,7 @@ int main()
 
                 // --- variables and objects that should be reset go here ---
 
+                 enable_motors = 0;
 
                 // reset variables and objects
                 actualColor = 0; // 0=undefined, 3=red, 4=yellow, 5=green, 7=blue
@@ -337,8 +336,6 @@ int main()
         // --- code that runs every cycle at the end goes here ---
 
         // print to the serial terminal
-        
-        
 
         // read timer and make the main thread sleep for the remaining time span (non blocking)
         int main_task_elapsed_time_ms = duration_cast<milliseconds>(main_task_timer.elapsed_time()).count();
