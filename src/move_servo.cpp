@@ -130,7 +130,6 @@ bool move_servo(int color_to_servo, int packageReceived){ // wert color_to_senso
                 servo_input_D3 = 0.47f;
                 servo_D3.setPulseWidth(servo_input_D3);
             }
-            else printf("No usable colortype detected");
 
             transition_timer.start(3000);
             servo_state = ServoState::SLEEP_OUT;
@@ -163,7 +162,6 @@ bool move_servo(int color_to_servo, int packageReceived){ // wert color_to_senso
                 servo_input_D3 = 0.98f;
                 servo_D3.setPulseWidth(servo_input_D3);
             }
-            else printf("No usable colortype detected");
 
             transition_timer.start(3000);
             servo_state = ServoState::SLEEP_IN;
