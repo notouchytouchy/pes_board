@@ -9,7 +9,7 @@
 #include "StateMachineUtils.h"
 
 
-bool move_servo(int color_to_servo, int packageReceived){ // wert color_to_sensor: 0 = no input, 3 = red, 4 = yello, 5 = green, 7 = blue
+bool move_servo(int color_to_servo, int packageReceived){ // wert color_to_sensor: 0 = no input, 3 = red, 4 = yellow, 5 = green, 7 = blue
     static StateTimer transition_timer; // initialising timer funktion
     static bool initializedDelievering=false;
     static bool initializedReceiving=false;
@@ -67,10 +67,10 @@ bool move_servo(int color_to_servo, int packageReceived){ // wert color_to_senso
         servo_D2.calibratePulseMinMax(servo_D2_ang_min, servo_D2_ang_max);
         servo_D3.calibratePulseMinMax(servo_D3_ang_min, servo_D3_ang_max);
         // default acceleration of the servo motion profile is 1.0e6f
-        servo_D0.setMaxAcceleration(0.2f);
-        servo_D1.setMaxAcceleration(0.2f);
-        servo_D2.setMaxAcceleration(0.2f);
-        servo_D3.setMaxAcceleration(0.2f);
+        servo_D0.setMaxAcceleration(0.20f);
+        servo_D1.setMaxAcceleration(0.20f);
+        servo_D2.setMaxAcceleration(0.20f);
+        servo_D3.setMaxAcceleration(0.20f);
         // check to make sure servo outputs are disabled bevor start
         if(servo_D0.isEnabled())
             servo_D0.disable();
@@ -111,13 +111,13 @@ bool move_servo(int color_to_servo, int packageReceived){ // wert color_to_senso
         case ServoState::ROTATE_OUT: { // move robot out
            
             if(color_to_servo == 4){ //yellow servo
-                servo_D0.enable(0.0f);
+                servo_D0.enable(-0.5f);
                 servo_input_D0 = 0.41f;
                 servo_D0.setPulseWidth(servo_input_D0);
             }
             else if(color_to_servo == 3){ //red servo
                 servo_D1.enable(0.97f);
-                servo_input_D1 = 0.47f;
+                servo_input_D1 = 0.49f;
                 servo_D1.setPulseWidth(servo_input_D1);
             }
             else if(color_to_servo == 7){ //blue servo
@@ -131,7 +131,7 @@ bool move_servo(int color_to_servo, int packageReceived){ // wert color_to_senso
                 servo_D3.setPulseWidth(servo_input_D3);
             }
 
-            transition_timer.start(3000);
+            transition_timer.start(2800);
             servo_state = ServoState::SLEEP_OUT;
 
             break;
@@ -146,7 +146,7 @@ bool move_servo(int color_to_servo, int packageReceived){ // wert color_to_senso
 		}  
         case ServoState::ROTATE_IN: { // move robot back in
             
-            if(color_to_servo == 4){ //yello servo
+            if(color_to_servo == 4){ //yellow servo
                 servo_input_D0 = 0.00f;
                 servo_D0.setPulseWidth(servo_input_D0);
             }
