@@ -43,10 +43,10 @@ bool move_servo(int color_to_servo, int packageReceived){ // wert color_to_senso
         servo_D2.calibratePulseMinMax(servo_D2_ang_min, servo_D2_ang_max);
         servo_D3.calibratePulseMinMax(servo_D3_ang_min, servo_D3_ang_max);
         // default acceleration of the servo motion profile is 1.0e6f
-        servo_D0.setMaxAcceleration(0.5f);
-        servo_D1.setMaxAcceleration(0.5f);
-        servo_D2.setMaxAcceleration(0.5f);
-        servo_D3.setMaxAcceleration(0.5f);
+        servo_D0.setMaxAcceleration(0.4f);
+        servo_D1.setMaxAcceleration(0.4f);
+        servo_D2.setMaxAcceleration(0.4f);
+        servo_D3.setMaxAcceleration(0.4f);
         // check to make sure servo outputs are disabled bevor start
         if(servo_D0.isEnabled())
             servo_D0.disable();
@@ -111,27 +111,27 @@ bool move_servo(int color_to_servo, int packageReceived){ // wert color_to_senso
         case ServoState::ROTATE_OUT: { // move robot out
            
             if(color_to_servo == 4){ //yellow servo
-                servo_D0.enable(-0.5f);
-                servo_input_D0 = 0.41f;
+                servo_D0.enable(0.02f); // 0.07
+                servo_input_D0 = 0.49f; 
                 servo_D0.setPulseWidth(servo_input_D0);
             }
             else if(color_to_servo == 3){ //red servo
-                servo_D1.enable(0.97f);
-                servo_input_D1 = 0.49f;
+                servo_D1.enable(0.95f);
+                servo_input_D1 = 0.43f;
                 servo_D1.setPulseWidth(servo_input_D1);
             }
             else if(color_to_servo == 7){ //blue servo
-                servo_D2.enable(0.0f);
-                servo_input_D2 = 0.41f;
+                servo_D2.enable(0.02f);
+                servo_input_D2 = 0.49f; 
                 servo_D2.setPulseWidth(servo_input_D2);
             }
             else if(color_to_servo == 5){ //green servo
-                servo_D3.enable(1.0f);
-                servo_input_D3 = 0.47f;
+                servo_D3.enable(0.94f);
+                servo_input_D3 = 0.43f; 
                 servo_D3.setPulseWidth(servo_input_D3);
             }
 
-            transition_timer.start(2800);
+            transition_timer.start(2300);
             servo_state = ServoState::SLEEP_OUT;
 
             break;
@@ -147,19 +147,19 @@ bool move_servo(int color_to_servo, int packageReceived){ // wert color_to_senso
         case ServoState::ROTATE_IN: { // move robot back in
             
             if(color_to_servo == 4){ //yellow servo
-                servo_input_D0 = 0.00f;
+                servo_input_D0 = 0.02f;
                 servo_D0.setPulseWidth(servo_input_D0);
             }
             else if(color_to_servo == 3){ //red servo
-                servo_input_D1 = 0.97f;
+                servo_input_D1 = 0.95f;
                 servo_D1.setPulseWidth(servo_input_D1);
             }
             else if(color_to_servo == 7){ //blue servo
-                servo_input_D2 = 0.00f;
+                servo_input_D2 = 0.02f;
                 servo_D2.setPulseWidth(servo_input_D2);
             }
             else if(color_to_servo == 5){ //green servo
-                servo_input_D3 = 0.98f;
+                servo_input_D3 = 0.94f;
                 servo_D3.setPulseWidth(servo_input_D3);
             }
 

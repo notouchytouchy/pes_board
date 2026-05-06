@@ -121,7 +121,7 @@ int main()
                 case RobotState::INITIAL: {
 
                     if (mechanical_button.read()){  // startbutton pressed. beginning of the cycle
-                    overShootCorrection = 0.25f;
+                    overShootCorrection = 1.5f;
                     robot_state = RobotState::DrivingStart; 
                     }
                     
@@ -186,7 +186,7 @@ int main()
                 case RobotState::DrivingBackwards:{ // driving backwards until the first cross line
                         
                     motor_M1.setVelocity((-0.8)*0.78125f); 
-                    motor_M2.setVelocity(-0.81);
+                    motor_M2.setVelocity(-0.82);
 
                     if(motor_M1.getRotation() < (lastPositionM1 - 0.5)){ // inhibit the detection of the starting cross line
                         if((lineFollower.getAvgBit(2)>0.5 && lineFollower.getAvgBit(3)>0.5 && lineFollower.getAvgBit(4)>0.5 || lineFollower.getAvgBit(3)>0.5 && lineFollower.getAvgBit(4)>0.5 && lineFollower.getAvgBit(5)>0.5)){  // if 3 LED's detect black, we are at a cross line 
@@ -235,36 +235,77 @@ int main()
                         motor_M2.setVelocity(-0.5);  
                     }
 
-                    if(actualColor == 3){ // repositioning color red
-
-                        if(motor_M2.getRotation() < (lastPositionM2 - 0.10 + overShootCorrection)){
-                            motor_M1.setVelocity(0); 
-                            motor_M2.setVelocity(0);
-                            robot_state = RobotState::MoveArm; 
-                        }
-                    }
-
-                    else if(actualColor == 4){ // repositioning color yellow
+                    if (packageReceived == 0){
                         
-                        if(motor_M2.getRotation() < (lastPositionM2 - 0.49 + overShootCorrection)){
+                        if(actualColor == 3){ // repositioning color red
+                                motor_M1.setVelocity((0.5)*0.78125f); 
+                                motor_M2.setVelocity(0.5);  
+
+                            if(motor_M2.getRotation() > (lastPositionM2 + 0.10)){
+                                motor_M1.setVelocity(0); 
+                                motor_M2.setVelocity(0);
+                                robot_state = RobotState::MoveArm; 
+                            }
+                        }
+
+                        else if(actualColor == 4){ // repositioning color yellow
+                        
+                            if(motor_M2.getRotation() < (lastPositionM2 - 0.29)){
+                                motor_M1.setVelocity(0); 
+                                motor_M2.setVelocity(0);
+                                robot_state = RobotState::MoveArm; 
+                            }
+                        }
+
+                        else if(actualColor == 5){ // repositioning color green
+
+                            if(motor_M2.getRotation() < (lastPositionM2 - 0.25)){
+                                motor_M1.setVelocity(0); 
+                                motor_M2.setVelocity(0);
+                                robot_state = RobotState::MoveArm; 
+                            }
+                        }
+
+                        else if(actualColor == 7){ // repositioning color blue
+
+                            if(motor_M2.getRotation() < (lastPositionM2 - 0.6)){
+                                motor_M1.setVelocity(0); 
+                                motor_M2.setVelocity(0);
+                                robot_state = RobotState::MoveArm; 
+                            }
+                        }
+                    }
+
+                    if(actualColor == 3 && packageReceived != 0){ // repositioning color red
+
+                        if(motor_M2.getRotation() < (lastPositionM2 - 0.10)){
                             motor_M1.setVelocity(0); 
                             motor_M2.setVelocity(0);
                             robot_state = RobotState::MoveArm; 
                         }
                     }
 
-                    else if(actualColor == 5){ // repositioning color green
-
-                        if(motor_M2.getRotation() < (lastPositionM2 - 0.55 + overShootCorrection)){
+                    else if(actualColor == 4 && packageReceived != 0){ // repositioning color yellow
+                        
+                        if(motor_M2.getRotation() < (lastPositionM2 - 0.58)){
                             motor_M1.setVelocity(0); 
                             motor_M2.setVelocity(0);
                             robot_state = RobotState::MoveArm; 
                         }
                     }
 
-                    else if(actualColor == 7){ // repositioning color blue
+                    else if(actualColor == 5 && packageReceived != 0){ // repositioning color green
 
-                        if(motor_M2.getRotation() < (lastPositionM2 - 0.85 + overShootCorrection)){
+                        if(motor_M2.getRotation() < (lastPositionM2 - 0.55)){
+                            motor_M1.setVelocity(0); 
+                            motor_M2.setVelocity(0);
+                            robot_state = RobotState::MoveArm; 
+                        }
+                    }
+
+                    else if(actualColor == 7 && packageReceived != 0){ // repositioning color blue
+
+                        if(motor_M2.getRotation() < (lastPositionM2 - 0.85)){
                             motor_M1.setVelocity(0); 
                             motor_M2.setVelocity(0);
                             robot_state = RobotState::MoveArm; 
