@@ -93,7 +93,6 @@ int main()
     int packageDelieverd = 0;  // counts how many packages were delieverd
     float lastPositionM1 = 0;  // sets the last position of the M1, when cross line detected
     float lastPositionM2 = 0;  // sets the last position of the M2, when cross line detected
-    float overShootCorrection = 0; // correction variable against undershooting on the first house
 
 
     // this loop will run forever
@@ -121,8 +120,7 @@ int main()
                 case RobotState::INITIAL: {
 
                     if (mechanical_button.read()){  // startbutton pressed. beginning of the cycle
-                    overShootCorrection = 1.5f;
-                    robot_state = RobotState::DrivingStart; 
+                        robot_state = RobotState::DrivingStart; 
                     }
                     
                     break;
@@ -186,11 +184,11 @@ int main()
                 case RobotState::DrivingBackwards:{ // driving backwards until the first cross line
                         
                     motor_M1.setVelocity((-0.8)*0.78125f); 
-                    motor_M2.setVelocity(-0.82);
+                    motor_M2.setVelocity(-0.81);
 
                     if(motor_M1.getRotation() < (lastPositionM1 - 0.5)){ // inhibit the detection of the starting cross line
                         if((lineFollower.getAvgBit(2)>0.5 && lineFollower.getAvgBit(3)>0.5 && lineFollower.getAvgBit(4)>0.5 || lineFollower.getAvgBit(3)>0.5 && lineFollower.getAvgBit(4)>0.5 && lineFollower.getAvgBit(5)>0.5)){  // if 3 LED's detect black, we are at a cross line 
-                                robot_state = RobotState::Stopping; 
+                            robot_state = RobotState::Stopping; 
                         } 
                     }
 
@@ -203,7 +201,6 @@ int main()
                     motor_M2.setVelocity(lineFollower.getLeftWheelVelocity());  // set a desired speed for speed controlled dc motors M2
 
                     if((lineFollower.getAvgBit(2)>0.5 && lineFollower.getAvgBit(3)>0.5 && lineFollower.getAvgBit(4)>0.5 || lineFollower.getAvgBit(3)>0.5 && lineFollower.getAvgBit(4)>0.5 && lineFollower.getAvgBit(5)>0.5) && (motor_M2.getRotation() > (lastPositionM2 + 2.0))){  // if 3 LED's detect black, we are at a cross line
-                        overShootCorrection = 0; // overwrite correction varable with 0, because we don't need them anymore
                         robot_state = RobotState::Stopping;  
                     }
 
@@ -235,10 +232,10 @@ int main()
                         motor_M2.setVelocity(-0.5);  
                     }
 
-                    if (packageReceived == 0){
+                    if (packageReceived == 0){ // repos on the first house. values are different due to different approach to the house
                         
-                        if(actualColor == 3){ // repositioning color red
-                                motor_M1.setVelocity((0.5)*0.78125f); 
+                        if(actualColor == 3){ // first house: repositioning color red
+                                motor_M1.setVelocity((0.5)*0.78125f); // we need to drive forward here because the overshoot is too much
                                 motor_M2.setVelocity(0.5);  
 
                             if(motor_M2.getRotation() > (lastPositionM2 + 0.10)){
@@ -248,7 +245,7 @@ int main()
                             }
                         }
 
-                        else if(actualColor == 4){ // repositioning color yellow
+                        else if(actualColor == 4){ // first house: repositioning color yellow
                         
                             if(motor_M2.getRotation() < (lastPositionM2 - 0.29)){
                                 motor_M1.setVelocity(0); 
@@ -257,7 +254,7 @@ int main()
                             }
                         }
 
-                        else if(actualColor == 5){ // repositioning color green
+                        else if(actualColor == 5){ // first house: repositioning color green
 
                             if(motor_M2.getRotation() < (lastPositionM2 - 0.25)){
                                 motor_M1.setVelocity(0); 
@@ -266,7 +263,7 @@ int main()
                             }
                         }
 
-                        else if(actualColor == 7){ // repositioning color blue
+                        else if(actualColor == 7){ // first house: repositioning color blue
 
                             if(motor_M2.getRotation() < (lastPositionM2 - 0.6)){
                                 motor_M1.setVelocity(0); 
@@ -276,7 +273,7 @@ int main()
                         }
                     }
 
-                    if(actualColor == 3 && packageReceived != 0){ // repositioning color red
+                    if(actualColor == 3 && packageReceived != 0){ // all 7 other houses: repositioning color red
 
                         if(motor_M2.getRotation() < (lastPositionM2 - 0.10)){
                             motor_M1.setVelocity(0); 
@@ -285,7 +282,7 @@ int main()
                         }
                     }
 
-                    else if(actualColor == 4 && packageReceived != 0){ // repositioning color yellow
+                    else if(actualColor == 4 && packageReceived != 0){ // all 7 other houses: repositioning color yellow
                         
                         if(motor_M2.getRotation() < (lastPositionM2 - 0.58)){
                             motor_M1.setVelocity(0); 
@@ -294,7 +291,7 @@ int main()
                         }
                     }
 
-                    else if(actualColor == 5 && packageReceived != 0){ // repositioning color green
+                    else if(actualColor == 5 && packageReceived != 0){ // all 7 other houses: repositioning color green
 
                         if(motor_M2.getRotation() < (lastPositionM2 - 0.55)){
                             motor_M1.setVelocity(0); 
@@ -303,7 +300,7 @@ int main()
                         }
                     }
 
-                    else if(actualColor == 7 && packageReceived != 0){ // repositioning color blue
+                    else if(actualColor == 7 && packageReceived != 0){ // all 7 other houses: repositioning color blue
 
                         if(motor_M2.getRotation() < (lastPositionM2 - 0.85)){
                             motor_M1.setVelocity(0); 
